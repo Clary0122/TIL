@@ -1,4 +1,5 @@
 # MapReduce   
+# 
 - `vi fruit.txt`
 - 과일 이름 쓰기(중복가능)
   ```
@@ -88,3 +89,61 @@
 
   ```
 - (드라이버 클래스) : mapper, reducer 클래스를 실행하는 클래스
+```
+package wordCount;
+
+import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+public class WordCount {
+	public static void main(String[] args) 
+				throws IOException, ClassNotFoundException, InterruptedException{
+		
+		if (args.length != 2) {
+			System.out.println("usage error!!");
+			System.exit(0);
+		}
+		
+		Configuration conf = new Configuration();
+		
+		Job job = Job.getInstance(conf, "WordCount");
+		
+		job.setJarByClass(WordCount.class);	 // 실행 할 클래스
+		job.setMapperClass(WordCountMapper.class);  // 매퍼 클래스
+		job.setReducerClass(WordCountReducer.class);  // 리듀서 클래스
+		
+		job.setInputFormatClass(TextInputFormat.class);  // input 타입은 text
+		job.setOutputFormatClass(TextOutputFormat.class); // output 타입은 text
+		
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(IntWritable.class);
+		
+		// 데이터 들어오는 것 처리
+		FileInputFormat.addInputPath(job, new Path(args[0]));
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+		
+		// job 실행
+		job.waitForCompletion(true);
+	}
+}
+
+```
+- 모두 저장 후 WordCount.jar 이름으로 export 해주기
+- `hadoop jar WordCount.jar wordCount.WordCount fruit.txt output
+  ![image](https://user-images.githubusercontent.com/79209568/126068047-6c04133a-08d8-46cd-91a7-cc5c667f899e.png)
+  ![image](https://user-images.githubusercontent.com/79209568/126068050-bd84d18d-a927-4542-a302-427fb43cfb30.png)
+  ![image](https://user-images.githubusercontent.com/79209568/126068054-fd4d21c9-7cc5-426e-b707-64f9f0cbad27.png)
+
+- `hadoop fs -ls output`
+  ![image](https://user-images.githubusercontent.com/79209568/126068087-eb929c05-c0ad-4209-88ed-c29fa6bebf07.png)
+
+- `hadoop fs -cat output/part-r-00000`
+  ![image](https://user-images.githubusercontent.com/79209568/126068103-eb86d49d-4e1d-46fe-951d-a647297921c8.png)
