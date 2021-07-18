@@ -1,4 +1,4 @@
-# 
+# MapReduce   
 - `vi fruit.txt`
 - 과일 이름 쓰기(중복가능)
   ```
