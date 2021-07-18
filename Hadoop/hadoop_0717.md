@@ -63,28 +63,34 @@
 
   public class SingleFileWriteRead {
     public static void main(String[] args) throws IOException{
-      if (args.length != 2) {
+      if (args.length != 2) { // args 값이 2개 일 때만
         System.out.println("usage error");
         System.exit(0);
       }
 
-      Configuration conf = new Configuration();
+      // configuration : 하둡의 환경설정에 접근하기 위한 파일
+      //  core-default.xml, core-site.xml
+      Configuration conf = new Configuration(); 
       FileSystem hdfs = FileSystem.get(conf);
 
-      Path path = new Path(args[0]);
-      if (hdfs.exists(path)) {
+      Path path = new Path(args[0]); // 파일명 경로 획득 (test.txt)
+      if (hdfs.exists(path)) {  // 같은 파일명 있으면 지우기
         hdfs.delete(path, true);
       }
 
+      // 파일 쓰기
       FSDataOutputStream outputStream = hdfs.create(path);
-      outputStream.writeUTF(args[1]);
+      outputStream.writeUTF(args[1]); // 출력 값 (hello)
       outputStream.close();
+
+      // 파일 읽기
       FSDataInputStream inputStream = hdfs.open(path);
       String result = inputStream.readUTF();
       inputStream.close();
-      System.out.println("파일로부터 읽어온 내용="+result);
+      System.out.println("파일로부터 읽어온 내용 = "+result);
     }
   }
+
   ```
 - 패키지에서 오른쪽 클릭 - export - JAR file
   
@@ -100,5 +106,5 @@
   ![image](https://user-images.githubusercontent.com/79209568/126032629-7d4a4db1-4497-4b10-b184-e1ed2de2930b.png)
 
 
-
+# 실습과제
 
