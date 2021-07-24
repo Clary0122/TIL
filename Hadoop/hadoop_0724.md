@@ -40,7 +40,7 @@
 - 이클립스 실행
 - `hadoop_airline` 프로젝트 생성 후 UserLib 라이브러리 추가
 - `AirlinePerformance` 패키지 생성
-### DTO
+### Parser(DTO역할)
 - `AirlinePerformanceParser` 클래스 생성
 
 	```java
@@ -282,8 +282,12 @@
   ![image](https://user-images.githubusercontent.com/79209568/126863096-ebebeab5-0956-4d93-b167-47448551f4ce.png)
 
 <hr>
-# 일자별 호출 현황을 분석하는 프로그램
-## 파일 
+
+# Call Taxi 데이터로 여러 분석 결과 도출 실습
+## 데이터
+![image](https://user-images.githubusercontent.com/79209568/126865966-6eccd878-ef2f-4e04-baf9-30e7db273ce0.png)
+
+## 파일 전처리 
 - `call_taxi.csv` 파일을 쌍따옴표(")와 첫 번째 줄 지우기
   
   ```
@@ -292,3 +296,231 @@
   
   ![image](https://user-images.githubusercontent.com/79209568/126862927-7c44e82f-e976-48b0-9881-9a4530e66399.png)
 
+- hadoop put 해주기
+  
+  ```
+  hadoop fs -put new_call_taxi.csv
+  ```
+## 1. 2018년 9월의 날짜 별 call 수
+- 패키지명 : `CallTaxi201809`
+### Parser
+- `CallTaxi201809Parser` 클래스 생성
+	```java
+	package CallTaxi201809;
+
+	import org.apache.hadoop.io.Text;
+
+	public class CallTaxi201809Parser {
+		private String date;		//날짜, 년월일로 나눠줘도 된다.
+		private String week;		//요일
+		private int time;				//시간대
+		private String area1;	//구별
+		private String area2;	//동별	
+		private int call;				//콜수
+
+		public CallTaxi201809Parser(Text text){
+			String[] columns = text.toString().split(",");
+
+			date = columns[0];
+			week = columns[1];
+
+			time = Integer.parseInt(columns[2]);
+			area1 = columns[4];
+			area2 = columns[5];
+			call = Integer.parseInt(columns[6]);
+		}
+
+		public String getArea1() {
+			return area1;
+		}
+		public void setArea1(String area1) {
+			this.area1 = area1;
+		}
+		public String getArea2() {
+			return area2;
+		}
+		public void setArea2(String area2) {
+			this.area2 = area2;
+		}
+		public String getDate() {
+			return date;
+		}
+		public void setDate(String date) {
+			this.date = date;
+		}
+		public String getWeek() {
+			return week;
+		}
+		public void setWeek(String week) {
+			this.week = week;
+		}
+		public int getTime() {
+			return time;
+		}
+		public void setTime(int time) {
+			this.time = time;
+		}
+		public int getCall() {
+			return call;
+		}
+		public void setCall(int call) {
+			this.call = call;
+		}
+	}
+
+	```
+### Mapper
+- `CallTaxi201809Mapper` 클래스 생성 후 Mapper 클래스 상속
+- 출력키(outputKey)를 getDate로 날짜를 넣어주고 출력값(outputValue)을 getCall로 콜 수가 되도록 설정한다.
+  ```
+  outputValue.set(parser.getCall());
+  outputKey.set(parser.getDate());
+  ```
+- 전체
+	```java
+	package CallTaxi201809;
+
+	import java.io.IOException;
+
+	import org.apache.hadoop.io.IntWritable;
+	import org.apache.hadoop.io.LongWritable;
+	import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.mapreduce.Mapper;
+
+
+	public class CallTaxi201809Mapper extends Mapper<LongWritable, Text, Text, IntWritable>{
+
+		private Text outputKey = new Text();  
+		private final static IntWritable outputValue = new IntWritable(1);
+
+		@Override
+		protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+			CallTaxi201809Parser parser = new CallTaxi201809Parser(value);
+			outputValue.set(parser.getCall());
+			outputKey.set(parser.getDate());
+			context.write(outputKey, outputValue);
+
+		}
+
+	}
+
+	```
+### Reducer
+- `CallTaxi201809Reducer` 클래스를 생성 후 Reducer 클래스를 상속
+	```java
+	package CallTaxi201809;
+
+	import java.io.IOException;
+
+	import org.apache.hadoop.io.IntWritable;
+	import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.mapreduce.Reducer;
+
+
+	public class CallTaxi201809Reducer extends Reducer<Text, IntWritable, Text, IntWritable>{
+
+		private IntWritable result = new IntWritable();
+
+		@Override
+		protected void reduce(Text key, Iterable<IntWritable> values, Context context) 
+																												throws IOException, InterruptedException {
+
+			int sum = 0;
+
+			for(IntWritable data : values) {
+				sum += data.get();
+			}
+
+			result.set(sum);
+			context.write(key, result);
+		}
+
+	}
+	```
+
+### Driver
+- `CallTaxi201809Driver` 클래스 생성
+	```java
+	package CallTaxi201809;
+
+	import java.io.IOException;
+
+	import org.apache.hadoop.conf.Configuration;
+	import org.apache.hadoop.fs.Path;
+	import org.apache.hadoop.io.IntWritable;
+	import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.mapreduce.Job;
+	import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+	import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+	import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+	import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+
+	public class CallTaxi201809Driver {
+		public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+			if (args.length != 2) {
+				System.out.println("usage error");
+				System.exit(0);
+			}
+
+			Configuration conf = new Configuration();
+
+			Job job = Job.getInstance(conf, "CallTaxi201809Driver"); 
+
+			job.setJarByClass(CallTaxi201809Driver.class);								
+			job.setMapperClass(CallTaxi201809Mapper.class);	
+			job.setReducerClass(CallTaxi201809Reducer.class);
+
+			job.setInputFormatClass(TextInputFormat.class);
+			job.setOutputFormatClass(TextOutputFormat.class);
+
+			job.setMapOutputKeyClass(Text.class);
+			job.setMapOutputValueClass(IntWritable.class);
+
+			FileInputFormat.addInputPath(job, new Path(args[0]));
+			FileOutputFormat.setOutputPath(job, new Path(args[1]));
+
+			job.waitForCompletion(true);
+		}
+	}
+	```
+### 실행
+- `CallTaxi201809.jar`로 export
+- `hadoop jar CallTaxi201809.jar CallTaxi201809.CallTaxi201809Driver new_call_taxi.csv output201809`
+- `hadoop fs -cat output201809/part-r-00000`
+  
+  ![image](https://user-images.githubusercontent.com/79209568/126865914-cc3c9852-1f6c-468c-8112-7c1da7ce1dc4.png)
+
+## 2. 시도/시군구 별 call 수
+### Parser
+- 동일
+### Mapper
+- 출력키(outputKey)를 getArea1 + getArea2로 시도+시군구를 넣어주고 출력값(outputValue)을 getCall로 콜 수가 되도록 설정한다.
+	```
+	outputValue.set(parser.getCall());
+	outputKey.set(parser.getArea1()+","+parser.getArea2());
+	```
+### Reducer
+- 동일
+### Driver
+- 클래스 명만 맞춰주고 코드 동일
+### 실행 결과
+![image](https://user-images.githubusercontent.com/79209568/126866080-31ce6b15-7cb2-4823-a254-44be200eaea4.png)
+
+## 3. 요일/시간 별 call 수
+### parser
+- time을 String으로 받아온다 (출력 형태를 두 자리로 맞추기위해)
+  
+  ![image](https://user-images.githubusercontent.com/79209568/126866125-719235ae-b093-43ad-a704-67ac0c9ca68f.png)
+### Mapper
+- 출력키(outputKey)를 getWeek + getTime으로 요일+시간을 넣어주고 출력값(outputValue)을 getCall로 콜 수가 되도록 설정한다.
+	```
+	outputValue.set(parser.getCall());
+	outputKey.set(parser.getWeek()+","+parser.getTime());
+	```
+### Reducer
+- 동일
+### Driver
+- 클래스 명만 맞춰주고 코드 동일
+### 실행 결과
+![image](https://user-images.githubusercontent.com/79209568/126866184-646f0f75-a5d3-40f1-aac8-5816e03fb940.png)
