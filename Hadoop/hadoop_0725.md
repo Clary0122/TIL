@@ -302,7 +302,7 @@ hadoop fs -cat outputCovidMonth/part-r-00000
 - 이전 Reducer와 같음 \[[👉DelayCountReducer.java](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceWorkType/DelayCountReducer.java)]
 
 ### Driver
-- `DelayCount` \[👉코드](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceWorkType/DelayCount.java)]
+- `DelayCount` \[[👉코드](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceWorkType/DelayCount.java)]
 - 환경 설정 정보를 제어할 수 있게 Configured 클래스를 상속 받아야 한다.
 - 사용자 정의 옵션을 정의할 수 있게 Tool 인터페이스를 구현해야한다.
   	```java
