@@ -264,7 +264,7 @@ hadoop fs -cat outputCovidMonth/part-r-00000
 ## 1. GenericOptionsParser
 - 하둡 콘솔 명령어에서 입력한 옵션을 분석한다.
 - 사용자가 하둡 콜솔 명령에서 입력한 파라미터를 인식한ㄷ
-- -`D`를 이용하여 작업하면 파라미터별로 작업이 다르게 수행되도록 작성할 수 있다.
+- `-D`를 이용하여 작업하면 파라미터별로 작업이 다르게 수행되도록 작성할 수 있다.
 
 ## 2. Tool(interface)
 - Tool의 run 메서드를 이용해서 하둡 실행시점에 입력한 파라미터를 읽어오고 적용할 수 있도록 작업할 수 있다. 
@@ -276,11 +276,52 @@ hadoop fs -cat outputCovidMonth/part-r-00000
 	```
 ## 3. ToolRunner
 - Tool인터페이스의 실행을 도와주는 헬퍼클래스
+- GenericOptionParser를 사용해 콘솔 명령어로 설정한 옵션을 분석, Configuration 객체에 설정한다.
 
-<hr>
+## <실습> 옵션 값으로 출발, 도착 지연 구하기
+### Parser
+- 이전 parser와 같음 \[[👉AirlinePerformanceParser.java]()]
 
-## <실습>옵션 값으로 출발, 도착 지연 구하기
+### Mapper
+- `DelayCountMapper` \[[👉코드]()]
+- 사용자 옵션을 받는 변수 선언
+  ```java
+  private String workType;
+  ```
+- setup 메서드 오버라이딩
+  - Mapper가 실행될 때 맨 처음 한 번만 호출되어 실행되는 메서드. map 함수보다 먼저 실행된다.
+  - 도착지연을 체크할 지, 출발지연을 체크할 지 workType에서 받기 때문에 workType에서 선택하도록 한다.
+  ```java
+  @Override
+  protected void setup(Context context) throws IOException, InterruptedException {
+  	workType = context.getConfiguration().get("workType");
+  }
+  ```
+### Reducer
+- 이전 Reducer와 같음 \[[👉DelayCountReducer.java]()]
+
+### Driver
+- `DelayCount` \[👉코드]()]
+- 환경 설정 정보를 제어할 수 있게 Configured 클래스를 상속 받아야 한다.
+- 사용자 정의 옵션을 정의할 수 있게 Tool 인터페이스를 구현해야한다.
+  	```java
+	public class DelayCount extends Configured implements Tool{
+
+		public static void main(String[] args) throws Exception{
+			ToolRunner.run(new Configuration(), new DelayCount(), args);
+		}
+		@Override
+		public int run(String[] arg0) throws Exception {
+			String[] otherArgs = new GenericOptionsParser(getConf(), arg0).getRemainingArgs();
+
+			if (otherArgs.length != 2) {
+				System.out.println("usage error!");
+				System.exit(2);
+			}
+  	```
+  
 ### 실행
+- `-D workType=departure` 옵션을 추가해서 출발 지연을 확인한다.
 ```
 hadoop jar AirlinePerformanceWorkType.jar AirlinePerformanceWorkType.DelayCount -D workType=departure airline_input departure_delay_count
 
@@ -288,6 +329,7 @@ hadoop fs -cat departure_delay_count/part-r-00000
 ```
 ![image](https://user-images.githubusercontent.com/79209568/126891409-01d53de1-7948-4f9b-b6cc-588674a1d561.png)
 
+- `-D workType=arrival` 옵션을 추가해서 도착 지연을 확인한다.
 ```
 hadoop jar AirlinePerformanceWorkType.jar AirlinePerformanceWorkType.DelayCount -D workType=arrival airline_input arrival_delay_count
 
@@ -296,24 +338,74 @@ hadoop fs -cat arrival_delay_count/part-r-00000
 ![image](https://user-images.githubusercontent.com/79209568/126891410-ba63a756-573d-420d-801d-030f53c0ab60.png)
 
 ## <실습> 콜택시 날짜 별 지역구 별 선택 분석
+> #### 같은 방식으로 콜택시 선택 분석 프로그래밍
+> - Parser :: \[[CallTaxiWorkTypeParser]()]
+> - Mapper :: \[[CallTaxiWorkTypeMapper]()]
+>   
+>   ```java
+>   public void map(LongWritable key, Text value, Context context) 
+>   	throws IOException, InterruptedException{
+>  		CallTaxiWorkTypeParser parser = new CallTaxiWorkTypeParser(value);
+>   		
+>  		if (workType.equals("date")) {
+>  			outputValue.set(parser.getCall());
+>  			outputkey.set(parser.getDate());
+>  			context.write(outputkey, outputValue);
+>  		} else if (workType.equals("area")){
+>  			outputValue.set(parser.getCall());
+>  			outputkey.set(parser.getArea1()+","+parser.getArea2());
+>  			context.write(outputkey, outputValue);
+>  		}
+>  	}
+>   ```
+> - Reducer :: \[[CallTaxiWorkTypeReducer]()]
+> - Driver :: \[[CallTaxiWorkTypeDriver]()]
 ### 지역구 별
+- `-D workType=area` 옵션을 추가해서 지역 별 콜 수를 확인한다.
 ```
 hadoop jar CallTaxiWorkType.jar CallTaxiWorkType.CallTaxiWorkTypeDriver -D workType=area new_call_taxi.csv outputCallTaxiWTArea
 hadoop fs -cat outputCallTaxiWTArea/part-r-00000
 ```
+![image](https://user-images.githubusercontent.com/79209568/126907802-e58a1bc4-b610-4d4d-a485-7f36f4a6fe09.png)
+
+### 날짜 별
+- `-D workType=date` 옵션을 추가해서 날짜 별 콜 수를 확인한다.
 ```
 hadoop jar CallTaxiWorkType.jar CallTaxiWorkType.CallTaxiWorkTypeDriver -D workType=date new_call_taxi.csv outputCallTaxiWTDate
 hadoop fs -cat outputCallTaxiWTDate/part-r-00000
 ```
-### 날짜 별
+![image](https://user-images.githubusercontent.com/79209568/126907781-9092d728-3cec-4307-b0bf-b8ade9f2ff8a.png)
+
 ## <실습> 코로나 연월 별 지역구 별 선택 분석
+> #### 같은 방식으로 콜택시 선택 분석 프로그래밍
+> - Parser :: \[[Covid19WorkTypeParser]()]
+> - Mapper :: \[[Covid19WorkTypeMapper]()]
+>   
+>   ```java
+>   public void map(LongWritable key, Text value, Context context) 
+>   	throws IOException, InterruptedException{
+>  		Covid19WorkTypeParser parser = new Covid19WorkTypeParser(value);
+>   		
+>  		if (workType.equals("date")) {
+>  			outputkey.set(parser.getYear()+"-"+parser.getMonth());
+>  			context.write(outputkey, outputValue);
+>  		} else if (workType.equals("area")){
+>  			outputkey.set(parser.getArea());
+>  			context.write(outputkey, outputValue);
+>  		}
+>  	}
+>   ```
+> - Reducer :: \[[Covid19WorkTypeReducer]()]
+> - Driver :: \[[Covid19WorkTypeDriver]()]
 ### 연월 별
+- `-D workType=date` 옵션을 추가해서 연월 별 확진자 수를 확인한다.
 ```
 hadoop jar Covid19WorkType.jar Covid19WorkType.Covid19WorkTypeDriver -D workType=date seoulcovid19.csv outputCovidWTDate
 hadoop fs -cat outputCovidWTDate/part-r-00000
 ```
 ![image](https://user-images.githubusercontent.com/79209568/126892811-1d159e76-31d6-4398-9552-58550c54c03f.png)
 ### 지역구 별
+- `-D workType=area` 옵션을 추가해서 지역 별 확진자 수를 확인한다.
 ```
 hadoop jar Covid19WorkType.jar Covid19WorkType.Covid19WorkTypeDriver -D workType=area seoulcovid19.csv outputCovidWTArea
 hadoop fs -cat outputCovidWTArea/part-r-00000
@@ -323,13 +415,169 @@ hadoop fs -cat outputCovidWTArea/part-r-00000
 <hr>
 
 # Counter
-### Departure
+- 특정 케이스가 몇 번 일어났는지 부분적으로 로그를 찍어볼 수 있다.
+- Mapper나 Reducer의 필요한 곳에 static 함수를 호출하여 카운팅을 한다.
+- counter를 사용하기 위한 enum을 정의해줘야한다.
+
+## <실습> 비행기 출발 지연, 도착 지연 케이스를 로그에 출력
+### Parser
+- 이전 parser와 같음 \[[👉AirlinePerformanceParser.java]()]
+
+### enum
+- `DelayCounters`
+- counter 출력을 위한 enum 정의
+```java
+package AirlinePerformanceCounter;
+
+public enum DelayCounters {
+	NOT_AVAILABLE_DEPARTURE,
+	SCHEDULED_DEPARTURE, 
+	EARLY_DEPARTURE,
+	NOT_AVAILABLE_ARRIVAL,
+	SCHEDULED_ARRIVAL, 
+	EARLY_ARRIVAL;
+}
+```
+
+### Mapper
+- `DelayCountMapperWithCounter` \[[👉코드]()]
+- map 메서드에 `context.getCounter`를 통해 해당 코드가 진행 되면 `increment(1)`을 하여 1씩 증가 시키는 코드를 추가한다.
+	```java
+	if (workType.equals("departure")) {
+		if (parser.isDepartureDelayAvailable()) {
+			if (parser.getDepartureDelayTime() > 0) {  // 지연 출발 
+				outputkey.set(parser.getYear()+","+parser.getMonth());
+				context.write(outputkey, outputValue);
+			} else if (parser.getDepartureDelayTime() == 0) { // 정상 출발
+				context.getCounter(DelayCounters.SCHEDULED_DEPARTURE).increment(1);
+			} else if (parser.getDepartureDelayTime() < 0) {  // 먼저 출발
+				context.getCounter(DelayCounters.EARLY_DEPARTURE).increment(1);
+			} 
+		} else {
+			context.getCounter(DelayCounters.NOT_AVAILABLE_DEPARTURE).increment(1);
+		}
+	} else if (workType.equals("arrival")){
+		if (parser.isArriveDelayAvailable()) {
+			if (parser.getArriveDelayTime() > 0) {  // 지연 도착
+				outputkey.set(parser.getYear()+","+parser.getMonth());
+				context.write(outputkey, outputValue);
+			} else if (parser.getArriveDelayTime() == 0) { // 정상 도착
+				context.getCounter(DelayCounters.SCHEDULED_ARRIVAL).increment(1);
+			} else if (parser.getArriveDelayTime() < 0) {  // 먼저 도착
+				context.getCounter(DelayCounters.EARLY_ARRIVAL).increment(1);
+			} 
+		} else {
+			context.getCounter(DelayCounters.NOT_AVAILABLE_ARRIVAL).increment(1);
+		}
+	}
+	```
+### Reducer
+- 이전 Reducer와 같음 \[[👉DelayCountReducer.java]()]
+
+### Driver
+- 이전 Driver와 같음 \[[👉DelayCountWithCounter.java]()]
+
+### 실행결과
+#### Departure
 ```
 hadoop jar AirlinePerformanceCounter.jar AirlinePerformanceCounter.DelayCountWithCounter -D workType=departure airline_input departure_delay_count_counter
 ```
 ![image](https://user-images.githubusercontent.com/79209568/126894140-2a7cdfec-084b-44f9-ab9a-3065081e5a2c.png)f
-### Arrival
+#### Arrival
 ```
 hadoop jar AirlinePerformanceCounter.jar AirlinePerformanceCounter.DelayCountWithCounter -D workType=arrival airline_input arrival_delay_count_counter
 ```
 ![image](https://user-images.githubusercontent.com/79209568/126894276-b954b779-52b8-41f0-bc3a-a898bc2c756b.png)
+
+<hr>
+
+# MultipleOutput
+- 앞에서는 출발 지연, 도착 지연을 각각 서로 다른 job에서 분석을 수행했다.
+- MultipleOutput은 하나의 job에서 동시에 출발 지연, 도착 지연을 분석 하고 각각의 데이터를 별도의 파일로 남기는 것이 가능하다.
+- Driver 클래스에 MultipleOutput 옵션을 추가해준다.
+## <실습>한 번에 출발, 도착을 출력할 수 있도록 
+### Parser, enum 모두 위의 Counter 실습과 같다.
+> - Parser :: \[[AirlinePerformanceParser]()]
+> - Enum :: \[[DelayCounters]()]
+### Mapper
+- 위와 같지만 workType을 지워준다.
+	
+	```java
+	public class DelayCountMapperWithMultipleOutputs extends Mapper<LongWritable, Text, Text, IntWritable>{
+		private final static IntWritable outputValue = new IntWritable(1);
+		private Text outputkey = new Text();
+
+		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException{
+			AirlinePerformanceParser parser = new AirlinePerformanceParser(value);
+
+			if (parser.isDepartureDelayAvailable()) {
+				if (parser.getDepartureDelayTime() > 0) {  // 지연 출발 
+					outputkey.set("D," + parser.getYear()+","+parser.getMonth());
+					context.write(outputkey, outputValue);
+				} else if (parser.getDepartureDelayTime() == 0) { // 정상 출발
+					context.getCounter(DelayCounters.SCHEDULED_DEPARTURE).increment(1);
+				} else if (parser.getDepartureDelayTime() < 0) {  // 먼저 출발
+					context.getCounter(DelayCounters.EARLY_DEPARTURE).increment(1);
+				} 
+			} else {
+				context.getCounter(DelayCounters.NOT_AVAILABLE_DEPARTURE).increment(1);
+			}
+
+			if (parser.isArriveDelayAvailable()) {
+				if (parser.getArriveDelayTime() > 0) {  // 지연 도착
+					outputkey.set("A,"+ parser.getYear()+","+parser.getMonth());
+					context.write(outputkey, outputValue);
+				} else if (parser.getArriveDelayTime() == 0) { // 정상 도착
+					context.getCounter(DelayCounters.SCHEDULED_ARRIVAL).increment(1);
+				} else if (parser.getArriveDelayTime() < 0) {  // 먼저 도착
+					context.getCounter(DelayCounters.EARLY_ARRIVAL).increment(1);
+				} 
+			} else {
+				context.getCounter(DelayCounters.NOT_AVAILABLE_ARRIVAL).increment(1);
+			}
+		}	
+	}
+	```
+### Reducer
+- `DelayCountReducerWithMultipleOutputs` \[[👉코드]()]
+- 멀티플로 출력하기 위한 클래스를 선언해준다.
+  
+  ```java
+  private MultipleOutputs<Text, IntWritable> mos;
+  ```
+- setup, cleanup 메서드를 오버라이딩 해준다.
+	```java
+	@Override
+	protected void setup(Context context)   // MultipleOutput 생성
+			throws IOException, InterruptedException {
+		mos = new MultipleOutputs<>(context);
+	}
+
+	@Override
+	protected void cleanup(Context context) // close()로 닫아줌
+			throws IOException, InterruptedException {
+		mos.close();
+	}
+	```
+- reduce 메서드
+  - Mapper에서 `outputkey.set("D," + parser.getYear()+","+parser.getMonth());` set한대로 들어오는 타입이 `D,  1987, 10` 혹은 `A, 1987, 10`의 형식일 것이다.
+  - `D`로 들어오면 `departure` 파일 명에 key 값과 value 값을 write해준다.
+  - `A`로 들어오면 `arrival` 파일 명에 key 값과 value 값을 write해준다.
+
+### 실행 결과
+```
+hadoop jar AirlinePerformanceMultiple.jar AirlinePerformanceMultiple.DelayCountWithMultipleOutputs airline_input delay_count_multiple
+```
+- `hadoop fs -ls delay_count_multiple`로 확인해보면 `arrival`, `departure` 두 가지 모두 있는 것을 확인할 수 있다.
+  
+  ![image](https://user-images.githubusercontent.com/79209568/126895722-a6c677a4-f0c4-4115-99a4-b4c162800fb4.png)
+
+```
+hadoop fs -cat delay_count_multiple/arrival-r-00000
+```
+![image](https://user-images.githubusercontent.com/79209568/126895885-2024db65-97e8-4b4d-b4b5-6756809a6c37.png)
+
+```
+hadoop fs -cat delay_count_multiple/departure-r-00000
+```
+![image](https://user-images.githubusercontent.com/79209568/126895889-dcc6335a-dd8b-496c-92a7-d85ca0a8d326.png)
