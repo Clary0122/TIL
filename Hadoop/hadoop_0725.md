@@ -20,6 +20,7 @@
   hadoop fs -put seoulcovid19.csv
   ```
 ## 1. 서울시 COVID-19 월별 발생 인원 분석
+> - 패키지 :: \[[👉Covid19Month](https://github.com/Clary0122/TIL/tree/main/Hadoop/project/Covid19Month)]
 ### Parser
 ```java
 package Covid19Month;
@@ -280,10 +281,10 @@ hadoop fs -cat outputCovidMonth/part-r-00000
 
 ## <실습> 옵션 값으로 출발, 도착 지연 구하기
 ### Parser
-- 이전 parser와 같음 \[[👉AirlinePerformanceParser.java]()]
+- 이전 parser와 같음 \[[👉AirlinePerformanceParser.java](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceWorkType/AirlinePerformanceParser.java)]
 
 ### Mapper
-- `DelayCountMapper` \[[👉코드]()]
+- `DelayCountMapper` \[[👉코드](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceWorkType/DelayCountMapper.java)]
 - 사용자 옵션을 받는 변수 선언
   ```java
   private String workType;
@@ -298,10 +299,10 @@ hadoop fs -cat outputCovidMonth/part-r-00000
   }
   ```
 ### Reducer
-- 이전 Reducer와 같음 \[[👉DelayCountReducer.java]()]
+- 이전 Reducer와 같음 \[[👉DelayCountReducer.java](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceWorkType/DelayCountReducer.java)]
 
 ### Driver
-- `DelayCount` \[👉코드]()]
+- `DelayCount` \[👉코드](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceWorkType/DelayCount.java)]
 - 환경 설정 정보를 제어할 수 있게 Configured 클래스를 상속 받아야 한다.
 - 사용자 정의 옵션을 정의할 수 있게 Tool 인터페이스를 구현해야한다.
   	```java
@@ -339,8 +340,8 @@ hadoop fs -cat arrival_delay_count/part-r-00000
 
 ## <실습> 콜택시 날짜 별 지역구 별 선택 분석
 > #### 같은 방식으로 콜택시 선택 분석 프로그래밍
-> - Parser :: \[[CallTaxiWorkTypeParser]()]
-> - Mapper :: \[[CallTaxiWorkTypeMapper]()]
+> - Parser :: \[[CallTaxiWorkTypeParser](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/CallTaxiWorkType/CallTaxiWorkTypeParser.java)]
+> - Mapper :: \[[CallTaxiWorkTypeMapper](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/CallTaxiWorkType/CallTaxiWorkTypeMapper.java)]
 >   
 >   ```java
 >   public void map(LongWritable key, Text value, Context context) 
@@ -358,8 +359,8 @@ hadoop fs -cat arrival_delay_count/part-r-00000
 >  		}
 >  	}
 >   ```
-> - Reducer :: \[[CallTaxiWorkTypeReducer]()]
-> - Driver :: \[[CallTaxiWorkTypeDriver]()]
+> - Reducer :: \[[CallTaxiWorkTypeReducer](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/CallTaxiWorkType/CallTaxiWorkTypeReducer.java)]
+> - Driver :: \[[CallTaxiWorkTypeDriver](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/CallTaxiWorkType/CallTaxiWorkTypeDriver.java)]
 ### 지역구 별
 - `-D workType=area` 옵션을 추가해서 지역 별 콜 수를 확인한다.
 ```
@@ -378,8 +379,8 @@ hadoop fs -cat outputCallTaxiWTDate/part-r-00000
 
 ## <실습> 코로나 연월 별 지역구 별 선택 분석
 > #### 같은 방식으로 콜택시 선택 분석 프로그래밍
-> - Parser :: \[[Covid19WorkTypeParser]()]
-> - Mapper :: \[[Covid19WorkTypeMapper]()]
+> - Parser :: \[[Covid19WorkTypeParser](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/Covid19WorkType/Covid19WorkTypeParser.java)]
+> - Mapper :: \[[Covid19WorkTypeMapper](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/Covid19WorkType/Covid19WorkTypeMapper.java)]
 >   
 >   ```java
 >   public void map(LongWritable key, Text value, Context context) 
@@ -395,8 +396,8 @@ hadoop fs -cat outputCallTaxiWTDate/part-r-00000
 >  		}
 >  	}
 >   ```
-> - Reducer :: \[[Covid19WorkTypeReducer]()]
-> - Driver :: \[[Covid19WorkTypeDriver]()]
+> - Reducer :: \[[Covid19WorkTypeReducer](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/Covid19WorkType/Covid19WorkTypeReducer.java)]
+> - Driver :: \[[Covid19WorkTypeDriver](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/Covid19WorkType/Covid19WorkTypeDriver.java)]
 ### 연월 별
 - `-D workType=date` 옵션을 추가해서 연월 별 확진자 수를 확인한다.
 ```
@@ -421,7 +422,7 @@ hadoop fs -cat outputCovidWTArea/part-r-00000
 
 ## <실습> 비행기 출발 지연, 도착 지연 케이스를 로그에 출력
 ### Parser
-- 이전 parser와 같음 \[[👉AirlinePerformanceParser.java]()]
+- 이전 parser와 같음 \[[👉AirlinePerformanceParser.java](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceCounter/AirlinePerformanceParser.java)]
 
 ### enum
 - `DelayCounters`
@@ -440,7 +441,7 @@ public enum DelayCounters {
 ```
 
 ### Mapper
-- `DelayCountMapperWithCounter` \[[👉코드]()]
+- `DelayCountMapperWithCounter` \[[👉코드](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceCounter/DelayCountMapperWithCounter.java)]
 - map 메서드에 `context.getCounter`를 통해 해당 코드가 진행 되면 `increment(1)`을 하여 1씩 증가 시키는 코드를 추가한다.
 	```java
 	if (workType.equals("departure")) {
@@ -472,10 +473,10 @@ public enum DelayCounters {
 	}
 	```
 ### Reducer
-- 이전 Reducer와 같음 \[[👉DelayCountReducer.java]()]
+- 이전 Reducer와 같음 \[[👉DelayCountReducer.java](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceCounter/DelayCountReducer.java)]
 
 ### Driver
-- 이전 Driver와 같음 \[[👉DelayCountWithCounter.java]()]
+- 이전 Driver와 같음 \[[👉DelayCountWithCounter.java](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceCounter/DelayCountWithCounter.java)]
 
 ### 실행결과
 #### Departure
@@ -497,8 +498,8 @@ hadoop jar AirlinePerformanceCounter.jar AirlinePerformanceCounter.DelayCountWit
 - Driver 클래스에 MultipleOutput 옵션을 추가해준다.
 ## <실습>한 번에 출발, 도착을 출력할 수 있도록 
 ### Parser, enum 모두 위의 Counter 실습과 같다.
-> - Parser :: \[[AirlinePerformanceParser]()]
-> - Enum :: \[[DelayCounters]()]
+> - Parser :: \[[AirlinePerformanceParser](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceMultiple/AirlinePerformanceParser.java)]
+> - Enum :: \[[DelayCounters](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceMultiple/DelayCounters.java)]
 ### Mapper
 - 위와 같지만 workType을 지워준다.
 	
@@ -539,13 +540,14 @@ hadoop jar AirlinePerformanceCounter.jar AirlinePerformanceCounter.DelayCountWit
 	}
 	```
 ### Reducer
-- `DelayCountReducerWithMultipleOutputs` \[[👉코드]()]
+- `DelayCountReducerWithMultipleOutputs` \[[👉코드](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceMultiple/DelayCountReducerWithMultipleOutputs.java)]
 - 멀티플로 출력하기 위한 클래스를 선언해준다.
   
   ```java
   private MultipleOutputs<Text, IntWritable> mos;
   ```
 - setup, cleanup 메서드를 오버라이딩 해준다.
+	
 	```java
 	@Override
 	protected void setup(Context context)   // MultipleOutput 생성
@@ -563,7 +565,39 @@ hadoop jar AirlinePerformanceCounter.jar AirlinePerformanceCounter.DelayCountWit
   - Mapper에서 `outputkey.set("D," + parser.getYear()+","+parser.getMonth());` set한대로 들어오는 타입이 `D,  1987, 10` 혹은 `A, 1987, 10`의 형식일 것이다.
   - `D`로 들어오면 `departure` 파일 명에 key 값과 value 값을 write해준다.
   - `A`로 들어오면 `arrival` 파일 명에 key 값과 value 값을 write해준다.
+	
+	```java
+	public void reduce(Text key, Iterable<IntWritable> values, Context context) 
+			throws IOException, InterruptedException {
+		// 들어오는 데이터 타입 ex) D, 1987, 10  / A, 1987, 10 
+		String[] columns = key.toString().split(",");
+		outputKey.set(columns[1] + "," + columns[2]);
+		if (columns[0].equals("D")) {
+			int sum = 0;
+			for (IntWritable data : values) {
+				sum += data.get();
+			}
+			result.set(sum);
+			mos.write("departure", outputKey, result); // 파일명, key 값, value 값
+		} else if (columns[0].equals("A")) {
+			int sum = 0;
+			for (IntWritable data : values) {
+				sum += data.get();
+			}
+			result.set(sum);
+			mos.write("arrival", outputKey, result);
+		}
+	}
+	```
+### Driver
+- `DelayCountWithMultipleOutputs` \[[👉코드](https://github.com/Clary0122/TIL/blob/main/Hadoop/project/AirlinePerformanceMultiple/DelayCountWithMultipleOutputs.java)]
+- MultipleOutputs 설정을 해준다.
 
+	```java
+	MultipleOutputs.addNamedOutput(job, "departure", TextOutputFormat.class, Text.class, IntWritable.class);
+	MultipleOutputs.addNamedOutput(job, "arrival", TextOutputFormat.class, Text.class, IntWritable.class);
+	job.waitForCompletion(true);
+	```
 ### 실행 결과
 ```
 hadoop jar AirlinePerformanceMultiple.jar AirlinePerformanceMultiple.DelayCountWithMultipleOutputs airline_input delay_count_multiple
