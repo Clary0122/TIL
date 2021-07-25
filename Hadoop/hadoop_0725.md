@@ -27,16 +27,16 @@ package Covid19Month;
 import org.apache.hadoop.io.Text;
 
 public class Covid19MonthParser {
-	private int year;			//확진일
+	private int year;		//확진일
 	private int month;
 	private int day;
-	private String area;			//지역
+	private String area;		//지역
 	private String travel;		//여행력
-	private String contact;	//접촉력
+	private String contact;		//접촉력
 	private String status;		//상태
-	private String regDate;	//등록일
-	private String modDate; //수정일
-	private String exposure;		//노출여부
+	private String regDate;		//등록일
+	private String modDate; 	//수정일
+	private String exposure;	//노출여부
 	
 	public Covid19MonthParser(Text text) {
 		String[] columns = text.toString().split(",");
@@ -257,3 +257,79 @@ hadoop fs -cat outputCovidMonth/part-r-00000
 ![image](https://user-images.githubusercontent.com/79209568/126890024-0a499fe1-b035-4141-a045-d3c9b141ef7a.png)
 
 
+<hr>
+
+# 옵션 값으로 출력 값 지정
+
+## 1. GenericOptionsParser
+- 하둡 콘솔 명령어에서 입력한 옵션을 분석한다.
+- 사용자가 하둡 콜솔 명령에서 입력한 파라미터를 인식한ㄷ
+- -`D`를 이용하여 작업하면 파라미터별로 작업이 다르게 수행되도록 작성할 수 있다.
+
+## 2. Tool(interface)
+- Tool의 run 메서드를 이용해서 하둡 실행시점에 입력한 파라미터를 읽어오고 적용할 수 있도록 작업할 수 있다. 
+
+	```
+	interface Tool extends Configurable{
+		int run(String[] ars) throws Exception;
+	}
+	```
+## 3. ToolRunner
+- Tool인터페이스의 실행을 도와주는 헬퍼클래스
+
+<hr>
+
+## <실습>옵션 값으로 출발, 도착 지연 구하기
+### 실행
+```
+hadoop jar AirlinePerformanceWorkType.jar AirlinePerformanceWorkType.DelayCount -D workType=departure airline_input departure_delay_count
+
+hadoop fs -cat departure_delay_count/part-r-00000
+```
+![image](https://user-images.githubusercontent.com/79209568/126891409-01d53de1-7948-4f9b-b6cc-588674a1d561.png)
+
+```
+hadoop jar AirlinePerformanceWorkType.jar AirlinePerformanceWorkType.DelayCount -D workType=arrival airline_input arrival_delay_count
+
+hadoop fs -cat arrival_delay_count/part-r-00000
+```
+![image](https://user-images.githubusercontent.com/79209568/126891410-ba63a756-573d-420d-801d-030f53c0ab60.png)
+
+## <실습> 콜택시 날짜 별 지역구 별 선택 분석
+### 지역구 별
+```
+hadoop jar CallTaxiWorkType.jar CallTaxiWorkType.CallTaxiWorkTypeDriver -D workType=area new_call_taxi.csv outputCallTaxiWTArea
+hadoop fs -cat outputCallTaxiWTArea/part-r-00000
+```
+```
+hadoop jar CallTaxiWorkType.jar CallTaxiWorkType.CallTaxiWorkTypeDriver -D workType=date new_call_taxi.csv outputCallTaxiWTDate
+hadoop fs -cat outputCallTaxiWTDate/part-r-00000
+```
+### 날짜 별
+## <실습> 코로나 연월 별 지역구 별 선택 분석
+### 연월 별
+```
+hadoop jar Covid19WorkType.jar Covid19WorkType.Covid19WorkTypeDriver -D workType=date seoulcovid19.csv outputCovidWTDate
+hadoop fs -cat outputCovidWTDate/part-r-00000
+```
+![image](https://user-images.githubusercontent.com/79209568/126892811-1d159e76-31d6-4398-9552-58550c54c03f.png)
+### 지역구 별
+```
+hadoop jar Covid19WorkType.jar Covid19WorkType.Covid19WorkTypeDriver -D workType=area seoulcovid19.csv outputCovidWTArea
+hadoop fs -cat outputCovidWTArea/part-r-00000
+```
+![image](https://user-images.githubusercontent.com/79209568/126892877-a2dabe42-177e-42b6-843c-e9fe768aed17.png)
+
+<hr>
+
+# Counter
+### Departure
+```
+hadoop jar AirlinePerformanceCounter.jar AirlinePerformanceCounter.DelayCountWithCounter -D workType=departure airline_input departure_delay_count_counter
+```
+![image](https://user-images.githubusercontent.com/79209568/126894140-2a7cdfec-084b-44f9-ab9a-3065081e5a2c.png)f
+### Arrival
+```
+hadoop jar AirlinePerformanceCounter.jar AirlinePerformanceCounter.DelayCountWithCounter -D workType=arrival airline_input arrival_delay_count_counter
+```
+![image](https://user-images.githubusercontent.com/79209568/126894276-b954b779-52b8-41f0-bc3a-a898bc2c756b.png)
